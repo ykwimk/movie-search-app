@@ -1,24 +1,90 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, { useEffect, useReducer } from 'react';
 import './App.css';
+import Header from './components/Header/Header';
+import Movie from './components/Movie/Movie';
+import Search from './components/Search/Search';
 
-function App() {
+const MOVIE_API_KEY = 'http://www.omdbapi.com/?s=dark&apikey=4ff72935'
+
+const initialState = {
+  movies: [],
+  isLoading: true,
+  errorMessage: null,
+}
+
+const reducer = (state, action) => {
+  switch(action.type) {
+    case 'SEARCH_REQUEST':
+      return {
+        ...state,
+        isLoading: true,
+        errorMessage: null
+      }
+    case 'SEARCH_SUCCESS':
+      return {
+        ...state,
+        isLoading: false,
+        movies: action.data
+      }
+    case 'SEARCH_FAILURE':
+      return {
+        ...state,
+        isLoading: false,
+        errorMessage: action.error
+      }
+    default:
+      return state
+  }
+}
+
+const App = () => {
+  const [ state, dispatch ] = useReducer(reducer, initialState)
+
+  useEffect(() => {
+    fetch(MOVIE_API_KEY)
+    .then(response => response.json())
+    .then(jsonResponse => {
+      dispatch({
+        type: 'SEARCH_SUCCESS',
+        data: jsonResponse.Search
+      })
+    })
+  }, [])
+
+  const handleSearch = (value) => {
+    dispatch({
+      type: 'SEARCH_REQUEST',
+    })
+    fetch(`https://www.omdbapi.com/?s=${value}&apikey=4a3b711b`)
+    .then(response => response.json())
+    .then(jsonResponse => {
+      if (jsonResponse.Response === 'True') {
+        dispatch({
+          type: 'SEARCH_SUCCESS',
+          data: jsonResponse.Search
+        })
+      } else {
+        dispatch({
+          type: 'SEARCH_FAILURE',
+        })
+      }
+    })
+  }
+
+  const { movies, isLoading, errorMessage } = state
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <Header />
+      <Search handleSearch={handleSearch} />
+      <p className="intro">Sharing a few of our favourite movies</p>
+      <div className="movies">
+        {isLoading && !errorMessage ?
+          <span>loading...</span>
+        : !isLoading && errorMessage ?
+          <div className="errorMessage">{errorMessage}</div>
+        : movies.map((args) => <Movie key={args.imdbID} args={args} />)
+        }
+      </div>
     </div>
   );
 }
