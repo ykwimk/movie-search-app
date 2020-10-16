@@ -66,6 +66,7 @@ const App = () => {
       } else {
         dispatch({
           type: 'SEARCH_FAILURE',
+          error: jsonResponse.Error
         })
       }
     })
